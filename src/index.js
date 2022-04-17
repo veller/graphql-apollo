@@ -1,53 +1,41 @@
 const { ApolloServer } = require("apollo-server");
+const { PrismaClient } = require("@prisma/client");
 const fs = require("fs");
 const path = require("path");
 
-let links = [
-  {
-    id: "link-0",
-    url: "www.howtographql.com",
-    description: "Fullstack tutorial for GraphQL",
-  },
-];
+const prisma = new PrismaClient();
 
 const resolvers = {
   Query: {
     info: () => `This is the API of a Hackernews Clone`,
-    feed: () => links,
-    link: (parent, args) => {
-      return links.find((link) => link.id === args.id);
+    feed: async (parent, args, context) => {
+      return context.prisma.link.findMany();
     },
   },
   Mutation: {
-    post: (parent, args) => {
-      let idCount = links.length;
+    post: (parent, args, context, info) => {
+      const newLink = context.prisma.link.create({
+        data: {
+          url: args.url,
+          description: args.description,
+        },
+      });
 
-      const link = {
-        id: `link-${idCount++}`,
-        description: args.description,
-        url: args.url,
-      };
-
-      links.push(link);
-
-      return link;
+      return newLink;
     },
-    updateLink: (parent, args) => {
-      const linkIdx = links.findIndex((link) => link.id === args.id);
-
-      if (linkIdx < 0) return null;
-
-      links[linkIdx] = {
-        ...links[linkIdx],
-        url: args.url,
-        description: args.description,
-      };
-
-      return links[linkIdx];
+    updateLink: (parent, args, context, info) => {
+      return context.prisma.link.update({
+        where: { id: Number(args.id) },
+        data: {
+          url: args.url,
+          description: args.description,
+        },
+      });
     },
-    deleteLink: (parent, args) => {
-      links = links.filter((link) => link.id !== args.id);
-      console.log(`links`, links);
+    deleteLink: (parent, args, context, info) => {
+      return context.prisma.link.delete({
+        where: { id: Number(args.id) },
+      });
     },
   },
 };
@@ -55,6 +43,7 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(path.join(__dirname, "schema.graphql"), "utf-8"),
   resolvers,
+  context: { prisma },
 });
 
 server.listen().then(({ url }) => console.log(`Server is running on ${url}`));
