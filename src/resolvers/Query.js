@@ -8,12 +8,19 @@ function feed(parent, args, context) {
       }
     : {};
 
-  return context.prisma.link.findMany({
+  const links = context.prisma.link.findMany({
     where,
     skip: args.skip,
     take: args.take,
     orderBy: args.orderBy,
   });
+
+  const count = context.prisma.link.count({ where });
+
+  return {
+    links,
+    count,
+  };
 }
 
 module.exports = {
