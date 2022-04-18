@@ -23,6 +23,12 @@ function feed(parent, args, context) {
   };
 }
 
+function users(parent, args, context) {
+  console.log(`to entrando aqui pelo meno?`);
+  return context.prisma.user.findMany();
+}
+
 module.exports = {
   feed,
+  users,
 };
